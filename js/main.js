@@ -1,12 +1,11 @@
 /* global Chess */
 (() => {
   /* ---------- configuration ---------- */
-  // Both files must exist in js/ with these exact names:
+  // The two engine files must live in js/ with these exact names:
   //   js/stockfish-nnue-17-lite-single.js
   //   js/stockfish-nnue-17-lite-single.wasm
   const ENGINE_BASE = "stockfish-nnue-17-lite-single";
-  const ENGINE_PATH = `js/${ENGINE_BASE}.js`;
-  const ENGINE_WASM = `js/${ENGINE_BASE}.wasm`;
+  const ENGINE_PATH = `./js/${ENGINE_BASE}.js`;      // relative path works on GH Pages
 
   // Elo → Stockfish “Skill Level” (1-20)
   const skillForElo = { 300: 1, 800: 5, 1200: 10 };
@@ -31,7 +30,7 @@
   let game, engine, playerColor = "white", engineSkill = 1;
   const squareEls = {};
   let selected = null;
-  let engineReady = false;   // becomes true after “readyok”
+  let engineReady = false;     // becomes true after “readyok”
 
   /* ---------- menu actions ---------- */
   $startBtn.onclick = () => {
@@ -44,7 +43,7 @@
   /* ---------- load Stockfish worker ---------- */
   function initEngine(skill) {
     return new Promise((resolve, reject) => {
-      const worker = new Worker(ENGINE_PATH);
+      const worker = new Worker(ENGINE_PATH, { type: "classic" });
       let settled = false;
 
       worker.onerror = e => {
@@ -70,13 +69,12 @@
         }
       };
 
-      // Point to the wasm file then enter UCI mode
-      worker.postMessage(`setoption name WASMFile value ${ENGINE_WASM}`);
+      // Enter UCI mode (engine will emit “uciok” soon)
       worker.postMessage("uci");
     });
   }
 
-  /* ---------- helper to call engine safely ---------- */
+  /* ---------- safe engine call ---------- */
   function makeEngineMove() {
     if (!engineReady) {
       setTimeout(makeEngineMove, 50);
@@ -111,7 +109,7 @@
     });
   }
 
-  /* ---------- click-to-move logic ---------- */
+  /* ---------- click-to-move ---------- */
   function handleClick(sq) {
     const piece = game.get(sq);
 
