@@ -2,14 +2,14 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <title>Stockfish Web Chess v2.0 – no-CDN board</title>
+  <title>Stockfish Web Chess v2.1 – no-CDN board</title>
 
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
   <!-- ------------ Start Menu ------------ -->
   <div id="menu">
-    <h1>Play Stockfish <small style="font-size:.6em;color:#888">v2.0</small></h1>
+    <h1>Play Stockfish <small style="font-size:.6em;color:#888">v2.1</small></h1>
 
     <label>Choose your color:</label><br>
     <label><input type="radio" name="color" value="white" checked> White</label>
@@ -34,7 +34,10 @@
 
   <!-- ------------ Scripts ------------ -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.12.0/chess.min.js"></script>
-  <script src="js/stockfish.js"></script> <!-- local Stockfish build -->
+
+  <!-- ✅ Load Stockfish from a reliable CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/stockfish/stockfish.js"></script>
+
   <script src="js/main.js"></script>
 </body>
 </html>
