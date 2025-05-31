@@ -2,18 +2,18 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <title>Stockfish Web Chess</title>
+  <title>Stockfish Web Chess v1.1</title>
 
-  <!-- Chessboard.js CSS -->
+  <!-- Chessboard.js CSS (served from jsDelivr CDN) -->
   <link rel="stylesheet"
-        href="https://cdnjs.cloudflare.com/ajax/libs/chessboard.js/1.0.0/chessboard.min.css">
+        href="https://cdn.jsdelivr.net/npm/chessboardjs@1.0.0/dist/chessboard-1.0.0.min.css">
 
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
   <!-- ------------ Start Menu ------------ -->
   <div id="menu">
-    <h1>Play Stockfish</h1>
+    <h1>Play Stockfish <small style="font-size:0.6em;color:#888;">v1.1</small></h1>
 
     <label>Choose your color:</label><br>
     <label><input type="radio" name="color" value="white" checked> White</label>
@@ -37,13 +37,13 @@
   </div>
 
   <!-- ------------ Scripts ------------ -->
-  <!-- chess.js (UMD build) -->
+  <!-- chess.js (UMD build so `Chess` is global) -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.12.0/chess.min.js"></script>
 
-  <!-- chessboard.js -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/chessboard.js/1.0.0/chessboard.min.js"></script>
+  <!-- chessboard.js (jsDelivr CDN) -->
+  <script src="https://cdn.jsdelivr.net/npm/chessboardjs@1.0.0/dist/chessboard-1.0.0.min.js"></script>
 
-  <!-- ✅ tiny shim: expose ChessBoard (old name) as Chessboard so main.js finds it -->
+  <!-- Shim: if the library defines ChessBoard (older name), alias it to Chessboard -->
   <script>
     if (window.ChessBoard && !window.Chessboard) {
       window.Chessboard = window.ChessBoard;
