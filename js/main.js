@@ -21,8 +21,8 @@
 
   /* ---------- state ---------- */
   let game, engine, playerColor = 'white', engineSkill = 1;
-  const squareEls = {};  // map : square → div
-  let selected = null;   // currently-selected square
+  const squareEls = {};
+  let selected = null;
 
   /* ---------- menu ---------- */
   $startBtn.onclick = () => {
@@ -34,22 +34,32 @@
 
   /* ---------- Stockfish worker ---------- */
   const initEngine = skill => {
-    // ALWAYS use a Web Worker pointed at /js/stockfish.js
+    /*
+      The local `js/stockfish.js` you committed is a **threaded build** that
+      requires `SharedArrayBuffer`, which browsers block unless the site is
+      cross-origin isolated (GitHub Pages is not).  
+      → Work around this by loading the official **single-thread (no-SAB)**
+        build straight from jsDelivr.  It’s CORS-enabled, so a Worker can
+        pull it directly.
+    */
+    const STOCKFISH_URL =
+      'https://cdn.jsdelivr.net/npm/stockfish@16/stockfish.js'; // no-SAB build
+
     let worker;
     try {
-      worker = new Worker('js/stockfish.js');
+      worker = new Worker(STOCKFISH_URL);
     } catch (err) {
       alert(
-        'Could not create Stockfish worker.\n' +
-        'Make sure “js/stockfish.js” and “js/stockfish.wasm” are present\n' +
-        'and that the site is served over HTTPS (GitHub Pages uses HTTPS).'
+        'Could not load the Stockfish engine.\n' +
+        'Check your network connection. If you are offline, replace\n' +
+        'STOCKFISH_URL in js/main.js with a local single-thread build.'
       );
       throw err;
     }
 
     worker.postMessage('uci');
     worker.postMessage(`setoption name Skill Level value ${skill}`);
-    worker.onmessage = () => {};   // real handler added later
+    worker.onmessage = () => {};   // real handler is attached after startGame
     return worker;
   };
 
