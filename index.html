@@ -1,15 +1,13 @@
-
----
-
-### **index.html**
-
-```html
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="utf-8" />
   <title>Stockfish Web Chess</title>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/chessboard.js/1.0.0/chessboard.min.css">
+
+  <!-- Chessboard.js CSS -->
+  <link rel="stylesheet"
+        href="https://cdnjs.cloudflare.com/ajax/libs/chessboard.js/1.0.0/chessboard.min.css">
+
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -39,7 +37,9 @@
   </div>
 
   <!-- ------------ Scripts ------------ -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.13.4/chess.min.js"></script>
+  <!-- ✅ FIX: use a non-module (UMD) build of chess.js so “Chess” is a global -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.12.0/chess.min.js"></script>
+
   <script src="https://cdnjs.cloudflare.com/ajax/libs/chessboard.js/1.0.0/chessboard.min.js"></script>
   <script src="js/stockfish.js"></script> <!-- local file -->
   <script src="js/main.js"></script>
