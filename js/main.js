@@ -1,8 +1,12 @@
 /* global Chess */
 (() => {
   /* ---------- configuration ---------- */
-  const ENGINE_PATH = "js/stockfish-lite.js";      // local worker script
-  const ENGINE_WASM = "js/stockfish-lite.wasm";    // matching WASM file
+  // Both files must exist in js/ with these exact names:
+  //   js/stockfish-nnue-17-lite-single.js
+  //   js/stockfish-nnue-17-lite-single.wasm
+  const ENGINE_BASE = "stockfish-nnue-17-lite-single";
+  const ENGINE_PATH = `js/${ENGINE_BASE}.js`;
+  const ENGINE_WASM = `js/${ENGINE_BASE}.wasm`;
 
   // Elo → Stockfish “Skill Level” (1-20)
   const skillForElo = { 300: 1, 800: 5, 1200: 10 };
@@ -13,7 +17,7 @@
     P:"♙", R:"♖", N:"♘", B:"♗", Q:"♕", K:"♔"
   };
 
-  /* ---------- DOM ---------- */
+  /* ---------- DOM helpers ---------- */
   const $ = id => document.getElementById(id);
   const $menu       = $("menu");
   const $difficulty = $("difficulty");
@@ -27,9 +31,9 @@
   let game, engine, playerColor = "white", engineSkill = 1;
   const squareEls = {};
   let selected = null;
-  let engineReady = false;     // becomes true after “readyok”
+  let engineReady = false;   // becomes true after “readyok”
 
-  /* ---------- menu ---------- */
+  /* ---------- menu actions ---------- */
   $startBtn.onclick = () => {
     playerColor = document.querySelector('input[name="color"]:checked').value;
     engineSkill = skillForElo[$difficulty.value];
@@ -37,32 +41,36 @@
   };
   $restartBtn.onclick = () => location.reload();
 
-  /* ---------- Stockfish loader ---------- */
+  /* ---------- load Stockfish worker ---------- */
   function initEngine(skill) {
     return new Promise((resolve, reject) => {
       const worker = new Worker(ENGINE_PATH);
       let settled = false;
 
       worker.onerror = e => {
-        if (!settled) reject(e);
+        if (!settled) {
+          settled = true;
+          reject(e);
+        }
       };
 
       worker.onmessage = ({ data }) => {
         if (typeof data !== "string") return;
 
         if (data.startsWith("uciok")) {
-          // now that UCI is initialized, set skill & ask for ready
+          // UCI initialized → set skill, then ask for ready
           worker.postMessage(`setoption name Skill Level value ${skill}`);
           worker.postMessage("isready");
         } else if (data.startsWith("readyok")) {
           engineReady = true;
-          settled = true;
-          resolve(worker);
+          if (!settled) {
+            settled = true;
+            resolve(worker);
+          }
         }
       };
 
-      /* ---------- initiate engine ---------- */
-      // MUST set onmessage FIRST so we don't miss early output
+      // Point to the wasm file then enter UCI mode
       worker.postMessage(`setoption name WASMFile value ${ENGINE_WASM}`);
       worker.postMessage("uci");
     });
@@ -70,7 +78,7 @@
 
   /* ---------- helper to call engine safely ---------- */
   function makeEngineMove() {
-    if (!engineReady) {              // wait until “readyok”
+    if (!engineReady) {
       setTimeout(makeEngineMove, 50);
       return;
     }
@@ -103,7 +111,7 @@
     });
   }
 
-  /* ---------- click-to-move ---------- */
+  /* ---------- click-to-move logic ---------- */
   function handleClick(sq) {
     const piece = game.get(sq);
 
@@ -119,7 +127,6 @@
         return;
       }
 
-      // allow reselection of own piece
       if (piece && piece.color === playerColor[0]) {
         selected = sq;
         highlightSelectionAndMoves(sq);
@@ -132,24 +139,22 @@
     }
   }
 
-  /* ---------- highlights ---------- */
+  /* ---------- highlight helpers ---------- */
   function highlightSelectionAndMoves(src) {
     clearHighlights();
     squareEls[src].classList.add("selected");
-    game.moves({ square: src, verbose: true }).forEach(m =>
+    game.moves({ square: src, verbose:true }).forEach(m =>
       squareEls[m.to].classList.add("highlight")
     );
   }
   function clearHighlights() {
-    document
-      .querySelectorAll(".selected")
-      .forEach(el => el.classList.remove("selected"));
-    document
-      .querySelectorAll(".highlight")
-      .forEach(el => el.classList.remove("highlight"));
+    document.querySelectorAll(".selected")
+            .forEach(el => el.classList.remove("selected"));
+    document.querySelectorAll(".highlight")
+            .forEach(el => el.classList.remove("highlight"));
   }
 
-  /* ---------- board & status ---------- */
+  /* ---------- UI updates ---------- */
   function updateBoardUI() {
     Object.keys(squareEls).forEach(sq => {
       const p = game.get(sq);
@@ -165,7 +170,7 @@
     else                          $status.textContent = "";
   }
 
-  /* ---------- entry ---------- */
+  /* ---------- main entry ---------- */
   async function startGame() {
     $menu.style.display   = "none";
     $boardWrap.style.display = "block";
@@ -179,8 +184,8 @@
       engine = await initEngine(engineSkill);
       $status.textContent = "";
     } catch (err) {
-      console.error("Engine failed to load", err);
-      $status.textContent = "Engine failed.";
+      console.error("Engine failed", err);
+      $status.textContent = "Engine failed to load.";
       return;
     }
 
