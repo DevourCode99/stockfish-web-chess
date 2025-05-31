@@ -2,8 +2,9 @@
 (() => {
   /* ---------- configuration ---------- */
   const ENGINE_PATH = "js/stockfish-lite.js";      // local worker script
-  const ENGINE_WASM = "js/stockfish-lite.wasm";    // side-by-side WASM
+  const ENGINE_WASM = "js/stockfish-lite.wasm";    // matching WASM file
 
+  // Elo → Stockfish “Skill Level” (1-20) mapping
   const skillForElo = { 300: 1, 800: 5, 1200: 10 };
 
   /* Unicode chess symbols */
@@ -26,6 +27,7 @@
   let game, engine, playerColor = "white", engineSkill = 1;
   const squareEls = {};
   let selected = null;
+  let engineReady = false;     // set true after “uciok”
 
   /* ---------- menu ---------- */
   $startBtn.onclick = () => {
@@ -37,42 +39,46 @@
 
   /* ---------- Stockfish loader ---------- */
   function initEngine(skill) {
-    // Classic (non-module) worker, same-origin ⇒ always permitted
     const worker = new Worker(ENGINE_PATH);
+
+    // tell Stockfish where its WASM is (needed if you rename/move it)
+    worker.postMessage(`setoption name WASMFile value ${ENGINE_WASM}`);
 
     worker.postMessage("uci");
     worker.postMessage(`setoption name Skill Level value ${skill}`);
 
-    // Optional: tell Stockfish where its WASM blob is if you rename/move it
-    worker.postMessage(`setoption name WASMFile value ${ENGINE_WASM}`);
-
+    // resolve only after Stockfish sends “uciok”
     return new Promise(resolve => {
       worker.onmessage = ({ data }) => {
         if (typeof data === "string" && data.startsWith("uciok")) {
+          engineReady = true;
           resolve(worker);
         }
       };
     });
   }
 
-  const makeEngineMove = () => {
+  /* ---------- helper to call engine safely ---------- */
+  function makeEngineMove() {
+    if (!engineReady) {
+      setTimeout(makeEngineMove, 100);
+      return;
+    }
     engine.postMessage(`position fen ${game.fen()}`);
     engine.postMessage("go depth 15");
-  };
+  }
 
   /* ---------- board construction ---------- */
   function buildBoard() {
     $board.className = "board";
     $board.innerHTML = "";
 
-    const files =
-      playerColor === "white"
-        ? ["a","b","c","d","e","f","g","h"]
-        : ["h","g","f","e","d","c","b","a"];
-    const ranks =
-      playerColor === "white"
-        ? [8,7,6,5,4,3,2,1]
-        : [1,2,3,4,5,6,7,8];
+    const files  = playerColor === "white"
+      ? ["a","b","c","d","e","f","g","h"]
+      : ["h","g","f","e","d","c","b","a"];
+    const ranks  = playerColor === "white"
+      ? [8,7,6,5,4,3,2,1]
+      : [1,2,3,4,5,6,7,8];
 
     ranks.forEach(r => {
       files.forEach((f, fi) => {
@@ -125,12 +131,10 @@
     );
   }
   function clearHighlights() {
-    document
-      .querySelectorAll(".selected")
-      .forEach(el => el.classList.remove("selected"));
-    document
-      .querySelectorAll(".highlight")
-      .forEach(el => el.classList.remove("highlight"));
+    document.querySelectorAll(".selected")
+            .forEach(el => el.classList.remove("selected"));
+    document.querySelectorAll(".highlight")
+            .forEach(el => el.classList.remove("highlight"));
   }
 
   /* ---------- board & status ---------- */
