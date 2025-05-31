@@ -2,9 +2,9 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <title>Stockfish Web Chess v2.2 – self-hosted engine</title>
+  <title>Stockfish Web Chess v2.3 – self-hosted engine</title>
 
-  <!-- silent 1×1 favicon to stop 404 spam -->
+  <!-- 1 × 1 favicon to silence 404 -->
   <link rel="icon" type="image/png"
         href="data:image/png;base64,iVBORw0KGgo=" />
 
@@ -13,7 +13,10 @@
 <body>
   <!-- ------------ Start Menu ------------ -->
   <div id="menu">
-    <h1>Play Stockfish <small style="font-size:.6em;color:#888">v2.2</small></h1>
+    <h1>
+      Play Stockfish
+      <small style="font-size:.6em;color:#888">v2.3</small>
+    </h1>
 
     <label>Choose your color:</label><br>
     <label><input type="radio" name="color" value="white" checked> White</label>
@@ -39,9 +42,8 @@
   <!-- ------------ Scripts ------------ -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.12.0/chess.min.js"></script>
 
-  <!-- ✅ Use the Stockfish build you already committed -->
-  <script src="js/stockfish.js"></script>
-
+  <!--  ⚠️  DO **NOT** include stockfish.js here.
+        We launch it as a Web Worker from main.js -->
   <script src="js/main.js"></script>
 </body>
 </html>
