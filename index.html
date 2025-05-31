@@ -37,10 +37,19 @@
   </div>
 
   <!-- ------------ Scripts ------------ -->
-  <!-- ✅ FIX: use a non-module (UMD) build of chess.js so “Chess” is a global -->
+  <!-- chess.js (UMD build) -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.12.0/chess.min.js"></script>
 
+  <!-- chessboard.js -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/chessboard.js/1.0.0/chessboard.min.js"></script>
+
+  <!-- ✅ tiny shim: expose ChessBoard (old name) as Chessboard so main.js finds it -->
+  <script>
+    if (window.ChessBoard && !window.Chessboard) {
+      window.Chessboard = window.ChessBoard;
+    }
+  </script>
+
   <script src="js/stockfish.js"></script> <!-- local file -->
   <script src="js/main.js"></script>
 </body>
