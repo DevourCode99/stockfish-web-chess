@@ -4,7 +4,7 @@
   const ENGINE_PATH = "js/stockfish-lite.js";      // local worker script
   const ENGINE_WASM = "js/stockfish-lite.wasm";    // matching WASM file
 
-  // Elo → Stockfish “Skill Level” (1-20) mapping
+  // Elo → Stockfish “Skill Level” (1-20)
   const skillForElo = { 300: 1, 800: 5, 1200: 10 };
 
   /* Unicode chess symbols */
@@ -27,7 +27,7 @@
   let game, engine, playerColor = "white", engineSkill = 1;
   const squareEls = {};
   let selected = null;
-  let engineReady = false;     // set true after “uciok”
+  let engineReady = false;     // becomes true after “readyok”
 
   /* ---------- menu ---------- */
   $startBtn.onclick = () => {
@@ -39,29 +39,39 @@
 
   /* ---------- Stockfish loader ---------- */
   function initEngine(skill) {
-    const worker = new Worker(ENGINE_PATH);
+    return new Promise((resolve, reject) => {
+      const worker = new Worker(ENGINE_PATH);
+      let settled = false;
 
-    // tell Stockfish where its WASM is (needed if you rename/move it)
-    worker.postMessage(`setoption name WASMFile value ${ENGINE_WASM}`);
+      worker.onerror = e => {
+        if (!settled) reject(e);
+      };
 
-    worker.postMessage("uci");
-    worker.postMessage(`setoption name Skill Level value ${skill}`);
-
-    // resolve only after Stockfish sends “uciok”
-    return new Promise(resolve => {
       worker.onmessage = ({ data }) => {
-        if (typeof data === "string" && data.startsWith("uciok")) {
+        if (typeof data !== "string") return;
+
+        if (data.startsWith("uciok")) {
+          // now that UCI is initialized, set skill & ask for ready
+          worker.postMessage(`setoption name Skill Level value ${skill}`);
+          worker.postMessage("isready");
+        } else if (data.startsWith("readyok")) {
           engineReady = true;
+          settled = true;
           resolve(worker);
         }
       };
+
+      /* ---------- initiate engine ---------- */
+      // MUST set onmessage FIRST so we don't miss early output
+      worker.postMessage(`setoption name WASMFile value ${ENGINE_WASM}`);
+      worker.postMessage("uci");
     });
   }
 
   /* ---------- helper to call engine safely ---------- */
   function makeEngineMove() {
-    if (!engineReady) {
-      setTimeout(makeEngineMove, 100);
+    if (!engineReady) {              // wait until “readyok”
+      setTimeout(makeEngineMove, 50);
       return;
     }
     engine.postMessage(`position fen ${game.fen()}`);
@@ -73,10 +83,10 @@
     $board.className = "board";
     $board.innerHTML = "";
 
-    const files  = playerColor === "white"
+    const files = playerColor === "white"
       ? ["a","b","c","d","e","f","g","h"]
       : ["h","g","f","e","d","c","b","a"];
-    const ranks  = playerColor === "white"
+    const ranks = playerColor === "white"
       ? [8,7,6,5,4,3,2,1]
       : [1,2,3,4,5,6,7,8];
 
@@ -131,10 +141,12 @@
     );
   }
   function clearHighlights() {
-    document.querySelectorAll(".selected")
-            .forEach(el => el.classList.remove("selected"));
-    document.querySelectorAll(".highlight")
-            .forEach(el => el.classList.remove("highlight"));
+    document
+      .querySelectorAll(".selected")
+      .forEach(el => el.classList.remove("selected"));
+    document
+      .querySelectorAll(".highlight")
+      .forEach(el => el.classList.remove("highlight"));
   }
 
   /* ---------- board & status ---------- */
@@ -163,8 +175,14 @@
     updateBoardUI();
 
     $status.textContent = "Loading engine…";
-    engine = await initEngine(engineSkill);
-    $status.textContent = "";
+    try {
+      engine = await initEngine(engineSkill);
+      $status.textContent = "";
+    } catch (err) {
+      console.error("Engine failed to load", err);
+      $status.textContent = "Engine failed.";
+      return;
+    }
 
     engine.onmessage = ({ data }) => {
       if (typeof data === "string" && data.startsWith("bestmove")) {
