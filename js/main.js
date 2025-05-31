@@ -1,27 +1,28 @@
 /* global Chess */
 (() => {
-  // ---------- helpers ----------
+  /* ---------- helpers ---------- */
   const skillForElo = { 300: 1, 800: 5, 1200: 10 };
 
-  // Unicode symbols for pieces
+  /* Unicode chess symbols */
   const U = {
     p:"♟", r:"♜", n:"♞", b:"♝", q:"♛", k:"♚",
     P:"♙", R:"♖", N:"♘", B:"♗", Q:"♕", K:"♔"
   };
 
-  // UI elements
-  const $menu       = document.getElementById('menu');
-  const $difficulty = document.getElementById('difficulty');
-  const $startBtn   = document.getElementById('startBtn');
-  const $boardWrap  = document.getElementById('boardWrapper');
-  const $restartBtn = document.getElementById('restartBtn');
-  const $status     = document.getElementById('status');
-  const $board      = document.getElementById('board');
+  /* ---------- DOM ---------- */
+  const $ = id => document.getElementById(id);
+  const $menu        = $('menu');
+  const $difficulty  = $('difficulty');
+  const $startBtn    = $('startBtn');
+  const $boardWrap   = $('boardWrapper');
+  const $restartBtn  = $('restartBtn');
+  const $status      = $('status');
+  const $board       = $('board');
 
-  // game state
+  /* ---------- state ---------- */
   let game, engine, playerColor = 'white', engineSkill = 1;
-  const squareEls = {};
-  let selected = null;
+  const squareEls = {};  // map : square → div
+  let selected = null;   // currently-selected square
 
   /* ---------- menu ---------- */
   $startBtn.onclick = () => {
@@ -33,17 +34,25 @@
 
   /* ---------- Stockfish worker ---------- */
   const initEngine = skill => {
-    const SF = window.STOCKFISH || window.stockfish || window.Stockfish;
-    if (!SF) {
-      alert('Could not load Stockfish engine.\nCheck that stockfish.js is loading.');
-      throw new Error('Stockfish not found');
+    // ALWAYS use a Web Worker pointed at /js/stockfish.js
+    let worker;
+    try {
+      worker = new Worker('js/stockfish.js');
+    } catch (err) {
+      alert(
+        'Could not create Stockfish worker.\n' +
+        'Make sure “js/stockfish.js” and “js/stockfish.wasm” are present\n' +
+        'and that the site is served over HTTPS (GitHub Pages uses HTTPS).'
+      );
+      throw err;
     }
-    const worker = SF();
+
     worker.postMessage('uci');
     worker.postMessage(`setoption name Skill Level value ${skill}`);
-    worker.onmessage = () => {};
+    worker.onmessage = () => {};   // real handler added later
     return worker;
   };
+
   const makeEngineMove = () => {
     engine.postMessage(`position fen ${game.fen()}`);
     engine.postMessage('go depth 15');
@@ -53,10 +62,11 @@
   function buildBoard() {
     $board.className = 'board';
     $board.innerHTML = '';
-    const files = playerColor === 'white'
+
+    const files  = playerColor === 'white'
       ? ['a','b','c','d','e','f','g','h']
       : ['h','g','f','e','d','c','b','a'];
-    const ranks = playerColor === 'white'
+    const ranks  = playerColor === 'white'
       ? [8,7,6,5,4,3,2,1]
       : [1,2,3,4,5,6,7,8];
 
@@ -76,9 +86,11 @@
   /* ---------- click-to-move ---------- */
   function handleClick(sq) {
     const piece = game.get(sq);
+
     if (selected) {
       const move = game.move({ from: selected, to: sq, promotion:'q' });
       clearHighlights();
+
       if (move) {
         selected = null;
         updateBoardUI();
@@ -86,6 +98,8 @@
         setTimeout(makeEngineMove, 200);
         return;
       }
+
+      // allow reselection of own piece
       if (piece && piece.color === playerColor[0]) {
         selected = sq;
         highlightSelectionAndMoves(sq);
@@ -116,9 +130,9 @@
   function updateBoardUI() {
     Object.keys(squareEls).forEach(sq => {
       const p = game.get(sq);
-      squareEls[sq].textContent = p ? U[p.color === 'w'
-                                       ? p.type.toUpperCase()
-                                       : p.type] : '';
+      squareEls[sq].textContent = p
+        ? U[p.color === 'w' ? p.type.toUpperCase() : p.type]
+        : '';
     });
   }
   function updateStatus() {
@@ -130,7 +144,7 @@
 
   /* ---------- entry ---------- */
   function startGame() {
-    $menu.style.display = 'none';
+    $menu.style.display   = 'none';
     $boardWrap.style.display = 'block';
 
     game   = new Chess();
