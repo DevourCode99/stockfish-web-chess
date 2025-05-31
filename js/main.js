@@ -1,7 +1,7 @@
-/* global Chess, Chessboard, STOCKFISH */
+/* global Chess, STOCKFISH */
 (() => {
   // ---------- helpers ----------
-  const skillForElo = {300:1, 800:5, 1200:10};
+  const skillForElo = { 300: 1, 800: 5, 1200: 10 };
 
   // UI elements
   const $menu       = document.getElementById('menu');
@@ -28,7 +28,7 @@
     const worker = STOCKFISH();
     worker.postMessage('uci');
     worker.postMessage(`setoption name Skill Level value ${skill}`);
-    worker.onmessage = e => { /* we’ll set dynamically later */ };
+    worker.onmessage = () => { /* handler set later */ };
     return worker;
   };
 
@@ -43,8 +43,8 @@
     position: 'start',
     orientation: color,
     showNotation: true,
-    onDragStart: onDragStart,
-    onDrop: onDrop,
+    onDragStart,
+    onDrop,
     onSnapEnd: () => board.position(game.fen())
   });
 
@@ -53,14 +53,14 @@
 
     // highlight legal moves
     removeHighlights();
-    const moves = game.moves({square: source, verbose: true});
-    moves.forEach(m => highlight(m.to));
+    game.moves({ square: source, verbose: true })
+        .forEach(m => highlight(m.to));
   };
 
   const onDrop = (source, target) => {
     removeHighlights();
 
-    const move = game.move({from: source, to: target, promotion:'q'});
+    const move = game.move({ from: source, to: target, promotion: 'q' });
     if (!move) return 'snapback';
 
     board.position(game.fen());
@@ -71,33 +71,49 @@
   };
 
   // ---------- highlight helpers ----------
-  const greySquare = square => document.querySelector(`.square-${square}`).classList.add('highlight');
-  const removeHighlights = () => document.querySelectorAll('.highlight').forEach(el => el.classList.remove('highlight'));
-  const highlight = square => greySquare(square);
+  const greySquare       = sq => document
+                                   .querySelector(`.square-${sq}`)
+                                   .classList.add('highlight');
+  const removeHighlights = () =>
+          document.querySelectorAll('.highlight')
+                  .forEach(el => el.classList.remove('highlight'));
+  const highlight        = sq => greySquare(sq);
 
   // ---------- status ----------
   const updateStatus = () => {
-    if (game.in_checkmate())     $status.textContent = 'Checkmate!';
-    else if (game.in_draw())     $status.textContent = 'Draw';
-    else if (game.in_check())    $status.textContent = 'Check!';
-    else                         $status.textContent = '';
+    if      (game.in_checkmate()) $status.textContent = 'Checkmate!';
+    else if (game.in_draw())      $status.textContent = 'Draw';
+    else if (game.in_check())     $status.textContent = 'Check!';
+    else                          $status.textContent = '';
   };
 
   // ---------- entry ----------
   function startGame() {
-    $menu.style.display = 'none';
+    $menu.style.display  = 'none';
     $boardWrap.style.display = 'block';
 
-    game   = new Chess();
-    board  = Chessboard('board', cfg(playerColor));
+    game = new Chess();
+
+    /* ---- FIX: pick whichever constructor is present ---- */
+    const ChessboardCtor = window.Chessboard || window.ChessBoard;
+    if (!ChessboardCtor) {
+      console.error('Chessboard.js failed to load - cannot start game.');
+      alert('Could not load the chessboard library.\nCheck your network or CDN URL.');
+      return;
+    }
+
+    board  = ChessboardCtor('board', cfg(playerColor));
     engine = initEngine(engineSkill);
 
     // engine message handler
     engine.onmessage = e => {
-      const line = e.data;
-      if (line.startsWith('bestmove')) {
-        const move = line.split(' ')[1];
-        game.move({ from: move.slice(0,2), to: move.slice(2,4), promotion: 'q' });
+      if (e.data.startsWith('bestmove')) {
+        const move = e.data.split(' ')[1];
+        game.move({
+          from: move.slice(0, 2),
+          to:   move.slice(2, 4),
+          promotion: 'q'
+        });
         board.position(game.fen());
         updateStatus();
       }
