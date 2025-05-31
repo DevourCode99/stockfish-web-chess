@@ -2,27 +2,30 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <title>Stockfish Web Chess v2.6.25 – self-hosted engine</title>
+  <title>Stockfish Web Chess v2.8</title>
 
-  <!-- 1 × 1 favicon to silence 404 -->
-  <link rel="icon" type="image/png"
-        href="data:image/png;base64,iVBORw0KGgo=" />
+  <!-- 1 × 1 transparent favicon to silence 404 warnings -->
+  <link rel="icon" type="image/png" href="data:image/png;base64,iVBORw0KGgo=" />
 
-  <link rel="stylesheet" href="style.css">
+  <!-- Ensure proper scaling on mobile -->
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+
+  <!-- Page-level styles -->
+  <link rel="stylesheet" href="style.css" />
 </head>
 <body>
   <!-- ------------ Start Menu ------------ -->
   <div id="menu">
     <h1>
       Play Stockfish
-      <small style="font-size:.6em;color:#888">v2.3</small>
+      <small style="font-size:.6em;color:#888;">v2.8</small>
     </h1>
 
-    <label>Choose your color:</label><br>
-    <label><input type="radio" name="color" value="white" checked> White</label>
-    <label><input type="radio" name="color" value="black"> Black</label>
+    <p>Choose your color:</p>
+    <label><input type="radio" name="color" value="white" checked /> White</label>
+    <label><input type="radio" name="color" value="black" /> Black</label>
 
-    <h3>Difficulty (elo)</h3>
+    <h3>Difficulty (Elo)</h3>
     <select id="difficulty">
       <option value="300">300 – Beginner</option>
       <option value="800">800 – Intermediate</option>
@@ -40,10 +43,10 @@
   </div>
 
   <!-- ------------ Scripts ------------ -->
+  <!-- chess.js (UMD) provides the Chess() game object -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.12.0/chess.min.js"></script>
 
-  <!--  ⚠️  DO **NOT** include stockfish.js here.
-        We launch it as a Web Worker from main.js -->
+  <!-- main.js loads the Stockfish worker and handles UI -->
   <script src="js/main.js"></script>
 </body>
 </html>
