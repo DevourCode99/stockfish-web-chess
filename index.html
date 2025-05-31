@@ -2,18 +2,14 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <title>Stockfish Web Chess v1.2</title>
-
-  <!-- Chessboard.js CSS (served from jsDelivr CDN) -->
-  <link rel="stylesheet"
-        href="https://cdn.jsdelivr.net/npm/chessboardjs@1.0.0/dist/chessboard-1.0.0.min.css">
+  <title>Stockfish Web Chess v2.0 – no-CDN board</title>
 
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
   <!-- ------------ Start Menu ------------ -->
   <div id="menu">
-    <h1>Play Stockfish <small style="font-size:0.6em;color:#888;">v1.1</small></h1>
+    <h1>Play Stockfish <small style="font-size:.6em;color:#888">v2.0</small></h1>
 
     <label>Choose your color:</label><br>
     <label><input type="radio" name="color" value="white" checked> White</label>
@@ -37,20 +33,8 @@
   </div>
 
   <!-- ------------ Scripts ------------ -->
-  <!-- chess.js (UMD build so `Chess` is global) -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.12.0/chess.min.js"></script>
-
-  <!-- chessboard.js (jsDelivr CDN) -->
-  <script src="https://cdn.jsdelivr.net/npm/chessboardjs@1.0.0/dist/chessboard-1.0.0.min.js"></script>
-
-  <!-- Shim: if the library defines ChessBoard (older name), alias it to Chessboard -->
-  <script>
-    if (window.ChessBoard && !window.Chessboard) {
-      window.Chessboard = window.ChessBoard;
-    }
-  </script>
-
-  <script src="js/stockfish.js"></script> <!-- local file -->
+  <script src="js/stockfish.js"></script> <!-- local Stockfish build -->
   <script src="js/main.js"></script>
 </body>
 </html>
