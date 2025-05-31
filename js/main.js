@@ -1,16 +1,8 @@
 /* global Chess */
 (() => {
   /* ---------- configuration ---------- */
-  // Full single-thread Stockfish 17 – NO SharedArrayBuffer required
-  const ENGINE_URL_FULL =
-    "https://cdn.jsdelivr.net/gh/nmrugg/stockfish.js@master/dist/stockfish-nnue-17-single.js";
-  // Smaller / faster Lite single-thread build (optional fallback)
-  const ENGINE_URL_LITE =
-    "https://cdn.jsdelivr.net/gh/nmrugg/stockfish.js@master/dist/stockfish-nnue-17-lite-single.js";
-
-  // If you prefer to keep the engine offline, download the two *.js / *.wasm*
-  // files above, place them in your js/ folder, and replace the URLs with
-  // "js/stockfish-nnue-17-single.js" etc.
+  const ENGINE_PATH = "js/stockfish-lite.js";      // local worker script
+  const ENGINE_WASM = "js/stockfish-lite.wasm";    // side-by-side WASM
 
   const skillForElo = { 300: 1, 800: 5, 1200: 10 };
 
@@ -44,33 +36,23 @@
   $restartBtn.onclick = () => location.reload();
 
   /* ---------- Stockfish loader ---------- */
-  async function initEngine(skill) {
-    // Try full NNUE first; if it fails (OOM, etc.), fall back to Lite
-    const tryLoad = url =>
-      new Promise((res, rej) => {
-        const w = new Worker(url);
-        w.onerror = e => rej(e);
-        w.onmessage = ({ data }) => {
-          if (typeof data === "string" && data.startsWith("uciok")) {
-            res(w);
-          }
-        };
-        w.postMessage("uci");
-      });
+  function initEngine(skill) {
+    // Classic (non-module) worker, same-origin ⇒ always permitted
+    const worker = new Worker(ENGINE_PATH);
 
-    let worker;
-    try {
-      worker = await tryLoad(ENGINE_URL_FULL);
-    } catch {
-      console.warn(
-        "Full engine failed (likely memory). Falling back to Lite build."
-      );
-      worker = await tryLoad(ENGINE_URL_LITE);
-    }
-
-    // set skill level
+    worker.postMessage("uci");
     worker.postMessage(`setoption name Skill Level value ${skill}`);
-    return worker;
+
+    // Optional: tell Stockfish where its WASM blob is if you rename/move it
+    worker.postMessage(`setoption name WASMFile value ${ENGINE_WASM}`);
+
+    return new Promise(resolve => {
+      worker.onmessage = ({ data }) => {
+        if (typeof data === "string" && data.startsWith("uciok")) {
+          resolve(worker);
+        }
+      };
+    });
   }
 
   const makeEngineMove = () => {
@@ -169,7 +151,7 @@
 
   /* ---------- entry ---------- */
   async function startGame() {
-    $menu.style.display = "none";
+    $menu.style.display   = "none";
     $boardWrap.style.display = "block";
 
     game = new Chess();
@@ -178,6 +160,7 @@
 
     $status.textContent = "Loading engine…";
     engine = await initEngine(engineSkill);
+    $status.textContent = "";
 
     engine.onmessage = ({ data }) => {
       if (typeof data === "string" && data.startsWith("bestmove")) {
@@ -187,8 +170,6 @@
         updateStatus();
       }
     };
-
-    $status.textContent = "";
 
     if (playerColor === "black") makeEngineMove();
   }
